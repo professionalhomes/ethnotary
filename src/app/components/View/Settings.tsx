@@ -1,5 +1,6 @@
 "use client";
-
+import { useState } from "react";
+import { useContractRead, useWriteContract, useAccount } from "wagmi";
 import { Button } from "@/src/app/components/ui/button";
 import {
   Card,
@@ -15,8 +16,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/src/app/components/ui/tabs";
+import { useToast } from "@/src/app/hooks/use-toast";
 import Wizard from "./Wizard";
 import { useQueryParams } from "@/src/app/hooks/useQueryParams";
+import { MULTI_SIGNATURE_ACCOUNT } from "@/src/app/constants/addresses";
+import { MULTI_SIGNATURE_ACCOUNT_ABI } from "@/src/app/constants/abi/MultiSignatureWallet";
+import { Address } from "viem";
 
 interface SettingsQueryParams {
   tab?: string;
@@ -24,6 +29,132 @@ interface SettingsQueryParams {
 
 export default function AccountSetting() {
   const { queryParams, setQueryParams } = useQueryParams<SettingsQueryParams>();
+  const { toast } = useToast();
+  const { address } = useAccount();
+
+  // State management
+  const [newOwnerAddress, setNewOwnerAddress] = useState<Address>();
+  const [pin1, setPin1] = useState<number>(786);
+  const [existingOwner, setExistingOwner] = useState("");
+  const [newOwner, setNewOwner] = useState("");
+  const [pin2, setPin2] = useState("");
+  const [requirement, setRequirement] = useState("");
+  const [pin3, setPin3] = useState("");
+
+  // Contract Read Operations
+  const { data: owners } = useContractRead({
+    address: MULTI_SIGNATURE_ACCOUNT,
+    abi: MULTI_SIGNATURE_ACCOUNT_ABI,
+    functionName: "getOwners",
+  });
+
+  // Contract Write Operations
+  const { writeContract: addOwnerWrite } = useWriteContract();
+  const { writeContract: removeOwnerWrite } = useWriteContract();
+  const { writeContract: replaceOwnerWrite } = useWriteContract();
+  const { writeContract: changeRequirementWrite } = useWriteContract();
+
+  // Handler Functions
+  const handleAddOwner = async () => {
+    try {
+      const hash = await addOwnerWrite({
+        address: MULTI_SIGNATURE_ACCOUNT,
+        abi: MULTI_SIGNATURE_ACCOUNT_ABI,
+        functionName: "addOwner",
+        args: [newOwnerAddress as `0x${string}`, pin1 as number],
+      });
+
+      toast({
+        title: "Transaction Submitted",
+        description: `Transaction Hash: ${hash}`,
+      });
+      setNewOwnerAddress(address!);
+      setPin1(786);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleRemoveOwner = async () => {
+    try {
+      const hash = await removeOwnerWrite({
+        address: MULTI_SIGNATURE_ACCOUNT,
+        abi: MULTI_SIGNATURE_ACCOUNT_ABI,
+        functionName: "removeOwner",
+        args: [newOwnerAddress as `0x${string}`, pin1 as number],
+      });
+
+      toast({
+        title: "Transaction Submitted",
+        description: `Transaction Hash: ${hash}`,
+      });
+      setNewOwnerAddress(address!);
+      setPin1(786);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleReplaceOwner = async () => {
+    try {
+      const hash = await replaceOwnerWrite({
+        address: MULTI_SIGNATURE_ACCOUNT,
+        abi: MULTI_SIGNATURE_ACCOUNT_ABI,
+        functionName: "replaceOwner",
+        args: [
+          existingOwner as `0x${string}`,
+          newOwner as `0x${string}`,
+          pin2 as unknown as number,
+        ],
+      });
+
+      toast({
+        title: "Transaction Submitted",
+        description: `Transaction Hash: ${hash}`,
+      });
+      setExistingOwner("");
+      setNewOwner("");
+      setPin2("");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleChangeRequirement = async () => {
+    try {
+      const hash = await changeRequirementWrite({
+        address: MULTI_SIGNATURE_ACCOUNT,
+        abi: MULTI_SIGNATURE_ACCOUNT_ABI,
+        functionName: "changeRequirement",
+        args: [BigInt(requirement)],
+      });
+
+      toast({
+        title: "Transaction Submitted",
+        description: `Transaction Hash: ${hash}`,
+      });
+      setRequirement("");
+      setPin3("");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
 
   if (!queryParams) {
     return <div>Error: Unable to fetch query parameters.</div>;
@@ -45,21 +176,31 @@ export default function AccountSetting() {
                 <CardTitle>Add/Remove Owner</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Input placeholder="Type Address" />
-                <Input type="password" placeholder="Enter Pin" />
-                <CardDescription className="text-sm text-muted-foreground">
-                  Please enter your pin set during account creation.
-                </CardDescription>
+                <Input
+                  placeholder="Type Address"
+                  value={newOwnerAddress}
+                  onChange={(e) =>
+                    setNewOwnerAddress(e.target.value as Address)
+                  }
+                />
+                <Input
+                  type="password"
+                  placeholder="Enter Pin"
+                  value={pin1}
+                  onChange={(e) => setPin1(parseInt(e.target.value))}
+                />
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     className="bg-green-500/10 text-green-500 hover:bg-green-500/20"
+                    onClick={handleAddOwner}
                   >
                     Add Owner
                   </Button>
                   <Button
                     variant="outline"
                     className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+                    onClick={handleRemoveOwner}
                   >
                     Remove Owner
                   </Button>

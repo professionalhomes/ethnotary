@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/src/app/components/ui/dropdown-menu";
 import { useCopyToClipboard } from "@/src/app/hooks/useCopyToClipboard";
 import { shortenAddress } from "@/src/app/lib/utils";
 

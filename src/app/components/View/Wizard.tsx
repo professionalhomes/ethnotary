@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useWriteContract, useAccount } from "wagmi";
+import { Button } from "@/src/app/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,7 +11,11 @@ import {
   CardTitle,
 } from "@/src/app/components/ui/card";
 import { Input } from "@/src/app/components/ui/input";
-import { Button } from "@/src/app/components/ui/button";
+import { useToast } from "@/src/app/hooks/use-toast";
+import { MSA_FACTORY } from "@/src/app/constants/addresses";
+import { MSA_FACTORY_ABI } from "@/src/app/constants/abi/MSAFactory";
+import { Address, isAddress } from "viem";
+import Spinner from "@/src/app/components/ui/spinner";
 
 interface WizardStep {
   id: number;
@@ -18,8 +25,113 @@ interface WizardStep {
 }
 
 export default function Wizard() {
+  const router = useRouter();
+  const { address } = useAccount();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDeploying, setIsDeploying] = useState(false);
+
+  // Form state
+  const [contractType, setContractType] = useState<string>("multisig");
+  const [contractName, setContractName] = useState<string>("");
+  const [owners, setOwners] = useState<Address[]>([address!]);
+  const [confirmations, setConfirmations] = useState<string>("");
+  const [pin, setPin] = useState<string>("");
+
+  const { writeContract: createAccount, isPending } = useWriteContract();
+
+  const addOwnerField = () => {
+    setOwners([...owners, "0x" as Address]);
+  };
+
+  const removeOwnerField = (index: number) => {
+    const newOwners = owners.filter((_, i) => i !== index);
+    setOwners(newOwners);
+  };
+
+  const updateOwner = (index: number, value: string) => {
+    const newOwners = [...owners];
+    newOwners[index] = value as Address;
+    setOwners(newOwners);
+  };
+
+  const validateInputs = () => {
+    // Check if all addresses are valid
+    if (owners.some((owner) => !isAddress(owner))) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Input",
+        description: "Please enter valid Ethereum addresses for all owners",
+      });
+      return false;
+    }
+
+    // Validate confirmations
+    const numConfirmations = parseInt(confirmations);
+    if (
+      isNaN(numConfirmations) ||
+      numConfirmations < 1 ||
+      numConfirmations > owners.length
+    ) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Input",
+        description:
+          "Required confirmations must be between 1 and the number of owners",
+      });
+      return false;
+    }
+
+    // Validate PIN
+    if (pin.length !== 4 || isNaN(Number(pin))) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Input",
+        description: "PIN must be a 4-digit number",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const deployContract = async () => {
+    if (!validateInputs()) {
+      return;
+    }
+
+    try {
+      setIsDeploying(true);
+
+      const hash = await createAccount({
+        address: MSA_FACTORY,
+        abi: MSA_FACTORY_ABI,
+        functionName: "createAccount",
+        args: [owners, BigInt(confirmations), BigInt(pin)],
+      });
+
+      toast({
+        title: "Success",
+        description:
+          "Contract deployment initiated. Please wait for confirmation.",
+      });
+
+      setTimeout(() => {
+        router.push("/");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Deployment error:", error);
+      toast({
+        variant: "destructive",
+        title: "Deployment Failed",
+        description:
+          error.message || "Failed to deploy contract. Please try again.",
+      });
+    } finally {
+      setIsDeploying(false);
+    }
+  };
 
   const steps: WizardStep[] = [
     {
@@ -33,7 +145,14 @@ export default function Wizard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4">
-              <Card className="p-4 cursor-pointer hover:bg-green-50 transition-colors">
+              <Card
+                className={`p-4 cursor-pointer transition-colors ${
+                  contractType === "multisig"
+                    ? "bg-green-50 border-2 border-green-500"
+                    : "hover:bg-green-50"
+                }`}
+                onClick={() => setContractType("multisig")}
+              >
                 <div className="flex items-center gap-4">
                   <div className="p-2 bg-green-100 rounded-lg">🔐</div>
                   <div>
@@ -87,29 +206,17 @@ export default function Wizard() {
             <CardTitle>Contract Name</CardTitle>
           </CardHeader>
           <CardContent>
-            <Input placeholder="Enter contract name" />
+            <Input
+              placeholder="Enter contract name"
+              value={contractName}
+              onChange={(e) => setContractName(e.target.value)}
+            />
           </CardContent>
         </Card>
       ),
     },
     {
       id: 3,
-      title: "Parameters",
-      description: "Setup how your contract will behave",
-      component: (
-        <Card>
-          <CardHeader>
-            <CardTitle>Contract Parameters</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input placeholder="Number of required signatures" type="number" />
-            <Input placeholder="Initial owner addresses" />
-          </CardContent>
-        </Card>
-      ),
-    },
-    {
-      id: 4,
       title: "Add Owners",
       description: "Add owners to your contract",
       component: (
@@ -118,13 +225,76 @@ export default function Wizard() {
             <CardTitle>Add Owners</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Input placeholder="Owner address" />
+            {owners.map((owner, index) => (
+              <div key={index} className="space-y-2">
+                <label className="text-sm font-medium">
+                  Owner {index + 1} Address
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    value={owner}
+                    onChange={(e) => updateOwner(index, e.target.value)}
+                    placeholder="0x..."
+                  />
+                  {owners.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => removeOwnerField(index)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
             <Button
+              type="button"
               variant="outline"
-              className="bg-green-500/10 text-green-500 hover:bg-green-500/20"
+              onClick={addOwnerField}
+              className="w-full"
             >
               Add Another Owner
             </Button>
+          </CardContent>
+        </Card>
+      ),
+    },
+    {
+      id: 4,
+      title: "Parameters",
+      description: "Setup how your contract will behave",
+      component: (
+        <Card>
+          <CardHeader>
+            <CardTitle>Contract Parameters</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Required Confirmations
+              </label>
+              <Input
+                type="number"
+                value={confirmations}
+                onChange={(e) => setConfirmations(e.target.value)}
+                placeholder="Number of required confirmations"
+                min="1"
+                max={owners.length}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Security PIN (4 digits)
+              </label>
+              <Input
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="Enter 4-digit PIN"
+                maxLength={4}
+              />
+            </div>
           </CardContent>
         </Card>
       ),
@@ -143,11 +313,29 @@ export default function Wizard() {
               <p className="text-sm font-medium">
                 Contract Type: Multi-Signature Account
               </p>
-              <p className="text-sm font-medium">Required Signatures: 2</p>
-              <p className="text-sm font-medium">Initial Owners: 3</p>
+              <p className="text-sm font-medium">
+                Contract Name: {contractName}
+              </p>
+              <p className="text-sm font-medium">
+                Required Signatures: {confirmations}
+              </p>
+              <p className="text-sm font-medium">
+                Number of Owners: {owners.length}
+              </p>
             </div>
-            <Button className="w-full bg-green-500 hover:bg-green-600 text-white">
-              Deploy Contract
+            <Button
+              className="w-full bg-green-500 hover:bg-green-600 text-white"
+              onClick={deployContract}
+              disabled={isDeploying || isPending}
+            >
+              {isDeploying || isPending ? (
+                <div className="flex items-center gap-2">
+                  <Spinner className="text-white" />
+                  <span>Deploying...</span>
+                </div>
+              ) : (
+                "Deploy Contract"
+              )}
             </Button>
           </CardContent>
         </Card>
