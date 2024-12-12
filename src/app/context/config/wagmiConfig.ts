@@ -61,7 +61,7 @@ export const WC_PARAMS = {
 };
 
 export const wagmiConfig = createConfig({
-  chains: [mainnet, sepolia, bsc, base, bscTestnet],
+  chains: [sepolia, mainnet, bsc, base, bscTestnet],
   connectors: [
     injectedWithFallback(),
     walletConnect(WC_PARAMS),

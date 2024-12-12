@@ -1,46 +1,52 @@
+"use client";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/src/app/components/ui/tabs";
+import { TransactionList } from "../TransactionList";
+import useTransactionStore from "../../store/useTransactionStore";
 
 export function TransactionsTab() {
+  const transactions = useTransactionStore((state) => state.transactions);
+
   const tabContents = [
     {
       value: "All Txn",
       label: "All Txn",
-      content: "All Transactions Content",
+      content: transactions,
+      filter: () => true, // Show all transactions
     },
     {
       value: "Confirms",
       label: "Confirms",
-      content: "Confirms Content",
+      content: transactions.filter((tx) => tx.status === "success"),
     },
-    {
-      value: "Submits",
-      label: "Submits",
-      content: "Submits Content",
-    },
-    {
-      value: "Execute",
-      label: "Execute",
-      content: "Execute Content",
-    },
-    {
-      value: "Deposits",
-      label: "Deposits",
-      content: "Deposits Content",
-    },
-    {
-      value: "Account",
-      label: "Account",
-      content: "Account Content",
-    },
+    // {
+    //   value: "Submits",
+    //   label: "Submits",
+    //   content: transactions.filter((tx) => tx.status === "submitting"),
+    // },
+    // {
+    //   value: "Execute",
+    //   label: "Execute",
+    //   content: transactions.filter((tx) => tx.status === "executing"),
+    // },
+    // {
+    //   value: "Deposits",
+    //   label: "Deposits",
+    //   content: transactions.filter((tx) => tx.type === "deposit"),
+    // },
+    // {
+    //   value: "Account",
+    //   label: "Account",
+    //   content: transactions.filter((tx) => tx.type === "account"),
+    // },
   ];
 
   return (
-    <div className="w-full h-full p-5 ">
+    <div className="w-full h-full p-5">
       <Tabs defaultValue="All Txn" className="w-full h-full flex flex-col">
         <div className="flex items-center mb-2">
           <h2 className="font-bold text-black mr-4">Transactions</h2>
@@ -52,15 +58,15 @@ export function TransactionsTab() {
             ))}
           </TabsList>
         </div>
-        <div className="flex-grow ">
+        <div className="flex-grow">
           {tabContents.map(({ value, content }) => (
             <TabsContent
               key={value}
               value={value}
               className="w-full h-full data-[state=inactive]:hidden"
             >
-              <div className="w-full h-full flex items-center justify-center text-3xl text-black bg-white rounded-lg">
-                {content}
+              <div className="w-full h-full bg-white rounded-lg p-4">
+                <TransactionList transactions={content} />
               </div>
             </TabsContent>
           ))}

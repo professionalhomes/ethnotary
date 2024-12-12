@@ -1,10 +1,11 @@
 import { Card, CardContent } from "../ui/card";
-import { Settings, File, ContrastIcon } from "lucide-react";
+import { Settings, File, ContrastIcon, Menu } from "lucide-react";
 import { Web3Status } from "../Dialogs/Wallet/Web3Status";
 import SwitchChainDialog from "../Dialogs/SwitchChainDialog";
 import ConnectorDialog from "../Dialogs/ConnectorDialog";
 import Link from "next/link";
 import Image from "next/image";
+import MobileSideBar from "../SideBar/MobileSideBar";
 
 const Header = () => {
   const contractTypes = [
@@ -22,6 +23,11 @@ const Header = () => {
       icon: <File className="w-6 h-6 text-clay-secondary" />,
       title: "Wizard",
       link: "/view?tab=wizard",
+    },
+    {
+      icon: <MobileSideBar />,
+      title: "Menu",
+      link: "",
     },
   ];
   return (

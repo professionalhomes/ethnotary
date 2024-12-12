@@ -37,9 +37,6 @@ export const Web3Status = () => {
     copyToClipboard(address!);
   };
 
-  console.log({
-    data,
-  });
   return (
     <div className="flex items-center justify-center">
       {!isConnected && (

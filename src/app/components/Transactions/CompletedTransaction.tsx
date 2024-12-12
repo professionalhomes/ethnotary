@@ -49,11 +49,14 @@ const CompletedTransaction = () => {
     }
 
     try {
-      const [tx, receipt, block] = await Promise.all([
+      const [tx, receipt] = await Promise.all([
         publicClient.getTransaction({ hash: txHash as `0x${string}` }),
         publicClient.getTransactionReceipt({ hash: txHash as `0x${string}` }),
-        publicClient.getBlock({ blockHash: receipt.blockHash }),
       ]);
+
+      const block = await publicClient.getBlock({
+        blockHash: receipt.blockHash,
+      });
 
       if (tx && receipt && block) {
         setTransaction({
