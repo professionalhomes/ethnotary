@@ -19,6 +19,7 @@ import {
 } from "@/src/app/components/ui/dialog";
 import { SendTransaction } from "./components/Main/SendTransaction";
 import { TokenTransfer } from "./components/Main/TokenTransfer";
+import EthPriceAndGasState from "./components/EthPriceAndGasState";
 const ACTIONS = [
   {
     icon: <Send className="w-5 h-5" />,
@@ -188,60 +189,7 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="grid md:grid-cols-6 gap-10 mt-10">
-        <div className="md:col-span-2 flex flex-col gap-10">
-          <Card>
-            <CardContent className="p-10">
-              <CardTitle className="text-[#7e8299] mb-2">Ether Price</CardTitle>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-[#20d489]">
-                  $3666.32
-                </span>
-                <span className="text-[#a1a5b7]">@ 0.037804 BTC</span>
-              </div>
-              <CardDescription className="mt-2">
-                As of Monday, December 2, 2024 at 08:54:28 PM
-              </CardDescription>
-              <CardFooter className="flex items-center gap-2 mt-2 p-0">
-                <span className="text-sm text-[#7e8299]">
-                  Source: coingecko.com
-                </span>
-                <button className="px-3 py-1 bg-[#20d489] text-white rounded-full text-sm">
-                  Refresh
-                </button>
-              </CardFooter>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-10">
-              <CardTitle className="text-[#7e8299] mb-4">
-                Ethereum Stats
-              </CardTitle>
-              <div className="space-y-4">
-                <div className="flex justify-between mb-1">
-                  <span className="text-[#7e8299]">Gas Price</span>
-                  <span className="text-[#3f4254]">31.806494879 Gwei</span>
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[#7e8299]">Network Congestion</span>
-                    <span className="text-[#3f4254]">15.5%</span>
-                  </div>
-                  <div className="h-2 bg-[#e4e6ef] rounded-full overflow-hidden">
-                    <div className="h-full w-[15.5%] bg-[#20d489] rounded-full" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <Card className="md:col-span-4">
-          <CardContent>
-            <TransactionsTab />
-          </CardContent>
-        </Card>
-      </div>
+      <EthPriceAndGasState />
     </>
   );
 }
