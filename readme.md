@@ -24,8 +24,7 @@ We’re continually working to improve ethnotary and expand its capabilities. He
  Customizable Dashboard for personalized user experience
  Integration with DeFi Tools like DEXes and yield farms
  Support for ERC-721 contracts to enable commmerce of media
-Got an idea? 💡
-See the [open issues] (https://github.com/jalvarez212/ethnotary/issues) for a full list of proposed features (and known issues).
+
 
 🔗 Connect
 💬 Need Help?
